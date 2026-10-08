@@ -1,9 +1,15 @@
 import urllib.request, json, base64, re, html as html_lib, sys, urllib.error
 from datetime import datetime, timezone, timedelta
 
-TOKEN = open("/home/openclaw/.openclaw/workspace/github.token").read().strip()
-COOKIE = open("/home/openclaw/.openclaw/workspace/weibo.cookie").read().strip()
-XSRF = open("/home/openclaw/.openclaw/workspace/weibo.xsrf").read().strip()
+def read_clean(path):
+    raw = open(path, "r", encoding="utf-8").read()
+    raw = re.sub(r"[\u2028\u2029\u200b\u200c\u200d\ufeff\u00a0]", "", raw)
+    raw = raw.replace("\r", "").replace("\n", "")
+    return raw.strip()
+
+TOKEN = read_clean("/home/openclaw/.openclaw/workspace/github.token")
+COOKIE = read_clean("/home/openclaw/.openclaw/workspace/weibo.cookie")
+XSRF = read_clean("/home/openclaw/.openclaw/workspace/weibo.xsrf")
 
 REPO = "6py5576s6n-creator/movie-news"
 PATH = "hotsearch.json"
