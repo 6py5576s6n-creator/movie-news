@@ -1,4 +1,4 @@
-import urllib.request, json, base64, sys, time, re, urllib.parse
+import urllib.request, json, base64, sys, time, re, urllib.parse, urllib.error
 from datetime import datetime, timezone, timedelta
 from difflib import SequenceMatcher
 
@@ -22,8 +22,8 @@ def clean_content(text, title):
  text = re.sub(r'[{]{2}.*?[}]{2}', '', text)
  text = re.sub(r'[{][^{}]*[}]', '', text)
  text = ' '.join(text.split())
- for w in ["扫描二维码", "访问手机版", "访问移动端", "点击查看", "版权声明", "责任编辑", "更多精彩", "相关新闻："]:
-  idx = text.find(w)
+ for wd in ["扫描二维码", "访问手机版", "访问移动端", "点击查看", "版权声明", "责任编辑", "更多精彩", "相关新闻："]:
+  idx = text.find(wd)
   if idx > 30:
    text = text[:idx]
  text = text.strip()
@@ -68,11 +68,25 @@ def gh_get_json(path):
   print("读 " + path + " 失败: " + str(e))
   return None, None
 
-def gh_put_json(path, data, sha, msg):
- body = {"message": msg, "content": base64.b64encode(json.dumps(data, ensure_ascii=False).encode("utf-8")).decode()}
- if sha:
-  body["sha"] = sha
- return gh("PUT", path, body)
+def gh_put_json_retry(path, data, msg):
+ for attempt in range(3):
+  try:
+   c = gh("GET", path)
+   sha = c["sha"]
+  except Exception:
+   sha = None
+  body = {"message": msg, "content": base64.b64encode(json.dumps(data, ensure_ascii=False).encode("utf-8")).decode()}
+  if sha:
+   body["sha"] = sha
+  try:
+   return gh("PUT", path, body)
+  except urllib.error.HTTPError as e:
+   if e.code == 409 and attempt < 2:
+    print("检测到 409，第 " + str(attempt+1) + " 次重试...")
+    time.sleep(3)
+    continue
+   raise
+ raise Exception("3 次重试后仍失败")
 
 print("=== 1. 读 tracked.json ===")
 tracked, _ = gh_get_json("tracked.json")
@@ -101,13 +115,13 @@ def tavily(query):
 new_items = []
 for kw in ["电影 定档 2026", "剧集 开机 2026", "国庆档 票房", "AI 电影 开机", "短剧 热度 2026"]:
  print("-- Tavily: " + kw)
- for r in tavily(kw):
-  title = (r.get("title") or "").strip()
+ for res in tavily(kw):
+  title = (res.get("title") or "").strip()
   if not title:
    continue
-  if any(w in title for w in ["盘点", "影评", "十大", "必看", "回顾"]):
+  if any(exclude in title for exclude in ["盘点", "影评", "十大", "必看", "回顾"]):
    continue
-  raw_content = r.get("content") or ""
+  raw_content = res.get("content") or ""
   content = clean_content(raw_content, title)
   summary = content[:80] if content else title
   theme = "long"
@@ -120,12 +134,12 @@ for kw in ["电影 定档 2026", "剧集 开机 2026", "国庆档 票房", "AI �
    "theme": theme,
    "sub": "日常资讯",
    "source": "Tavily",
-   "publish_time": (r.get("published_date") or datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M"))[:16],
+   "publish_time": (res.get("published_date") or datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M"))[:16],
    "title": title,
    "summary": summary,
    "content": content,
    "tags": ["日常资讯"],
-   "source_url": r.get("url") or "",
+   "source_url": res.get("url") or "",
    "confidence": 0.7
   })
 print("Tavily 新增:", len(new_items), "条")
@@ -153,7 +167,7 @@ for name in tracked:
    text = mb.get("text", "")
    if not text or len(text) < 15:
     continue
-   if not any(w in text for w in ["开机", "杀青", "定档", "开播", "上线", "预告", "花絮", "排播", "官宣"]):
+   if not any(kw in text for kw in ["开机", "杀青", "定档", "开播", "上线", "预告", "花絮", "排播", "官宣"]):
     continue
    tracking.append({
     "id": "wb_" + str(mb.get("id", int(time.time() * 1000))),
@@ -180,6 +194,12 @@ if len(all_new) == 0 and len(old_news) > 0:
  print("=== ALL DONE (SKIPPED) ===")
  sys.exit(0)
 
+print("写入前重新读取最新 news.json...")
+latest_news, latest_sha = gh_get_json("news.json")
+if isinstance(latest_news, list) and latest_news:
+ old_news = latest_news
+ print("已刷新基线:", len(old_news), "条")
+
 merged = old_news + all_new
 merged.sort(key=lambda k: k.get("publish_time", ""), reverse=True)
 
@@ -202,6 +222,6 @@ for x in merged:
 final = final[:200]
 print("合并后:", len(final), "条 (去掉了 " + str(len(merged) - len(final)) + " 条重复)")
 
-r = gh_put_json("news.json", final, news_sha, "daily update " + datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M"))
+r = gh_put_json_retry("news.json", final, "daily update " + datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M"))
 print("news.json commit:", r["commit"]["sha"])
 print("=== ALL DONE ===")
