@@ -145,19 +145,19 @@ QUERIES = [
     ("短剧 热度 2026", True),
 ]
 
-print("=== 1. 读 tracked.json ===")
+pass
 tracked, _ = gh_get_json("tracked.json")
 if not isinstance(tracked, list):
     tracked = ["奇换人生", "美人余"]
-print("追踪剧:", tracked)
+pass # silent
 
-print("=== 2. 读现有 news.json ===")
+pass
 old_news, news_sha = gh_get_json("news.json")
 if not isinstance(old_news, list):
     old_news = []
-print("旧数据:", len(old_news), "条")
+pass # silent
 
-print("=== 3. 清洗旧数据 ===")
+pass
 cleaned = 0
 for x in old_news:
     c = x.get("content") or ""
@@ -170,7 +170,7 @@ for x in old_news:
         cleaned += 1
 print("旧数据清洗:", cleaned, "条")
 
-print("=== 4. Tavily 搜索 ===")
+pass
 
 def tavily(query, advanced=False):
     body = {
@@ -224,9 +224,9 @@ for kw, adv in QUERIES:
             "source_url": res.get("url") or "",
             "confidence": 0.7
         })
-print("Tavily 新增:", len(new_items), "条")
+pass # silent
 
-print("=== 5. 微博追踪 ===")
+pass
 
 def weibo_search(name):
     q = urllib.parse.quote(name)
@@ -247,7 +247,7 @@ def weibo_search(name):
 
 tracking = []
 for name in tracked:
-    print("-- 微博: " + name)
+    pass # silent
     for card in weibo_search(name):
         for g in card.get("card_group", []):
             mb = g.get("mblog", {})
@@ -271,18 +271,18 @@ for name in tracked:
                 "confidence": 0.9
             })
     time.sleep(3)
-print("微博追踪新增:", len(tracking), "条")
+pass # silent
 
-print("=== 6. 合并 + 去重 + 防覆盖 ===")
+pass
 all_new = new_items + tracking
-print("本次新增:", len(all_new), "条")
+pass # silent
 
 if len(all_new) == 0 and len(old_news) > 0:
     print("本次 0 条，保留旧文件不动")
-    print("=== ALL DONE (SKIPPED) ===")
+    print("DONE: skipped (0 new)")
     sys.exit(0)
 
-print("写入前重新读取最新 news.json...")
+pass # silent
 latest_news, latest_sha = gh_get_json("news.json")
 if isinstance(latest_news, list) and latest_news:
     for x in latest_news:
@@ -290,7 +290,7 @@ if isinstance(latest_news, list) and latest_news:
         if "{{" in c or "}}" in c:
             x["content"] = clean_content(c, x.get("title", ""))
     old_news = latest_news
-    print("已刷新基线:", len(old_news), "条")
+    pass # silent
 
 merged = old_news + all_new
 merged.sort(key=lambda k: k.get("publish_time", ""), reverse=True)
