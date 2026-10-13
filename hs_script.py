@@ -40,23 +40,18 @@ def fetch(url, ref):
 
 def gh(method, path, body=None):
  url = "https://api.github.com/repos/" + REPO + "/contents/" + path
- for attempt in range(3):
- try:
- r = urllib.request.Request(url, method=method)
- r.add_header("Authorization", "Bearer " + TOKEN)
- r.add_header("Accept", "application/vnd.github+json")
- r.add_header("Content-Type", "application/json")
- if body:
- r.data = json.dumps(body).encode()
- return json.loads(urllib.request.urlopen(r).read())
- except Exception as e:
- err_name = type(e).__name__
- if err_name in ("IncompleteRead", "RemoteDisconnected", "ConnectionResetError", "TimeoutError") and attempt < 2:
- print("GH retry " + str(attempt+1) + ": " + err_name + " on " + path)
- import time as _t
- _t.sleep(3)
- continue
- raise
+ last_err = None
+ for _i in range(3):
+  try:
+   r = urllib.request.Request(url, method=method)
+   r.add_header("Authorization", "Bearer " + TOKEN)
+   r.add_header("Accept", "application/vnd.github+json")
+   r.add_header("Content-Type", "application/json")
+   if body:
+    r.data = json.dumps(body).encode()
+   return json.loads(urllib.request.urlopen(r).read())
+  except Exception as e:
+   last_err = e
 
 
 
