@@ -13,7 +13,7 @@ XSRF = read_clean("/home/openclaw/.openclaw/workspace/weibo.xsrf")
 
 REPO = "6py5576s6n-creator/movie-news"
 PATH = "hotsearch.json"
-HISTORY_PATH = _get_history_path()
+HISTORY_PATH = "hotsearch_history.json"
 
 H = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
