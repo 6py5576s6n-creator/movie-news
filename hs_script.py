@@ -41,7 +41,7 @@ def fetch(url, ref):
 def gh(method, path, body=None):
  url = "https://api.github.com/repos/" + REPO + "/contents/" + path
  err = None
- for _at in range(3):
+ for _i in range(3):
   try:
    r = urllib.request.Request(url, method=method)
    r.add_header("Authorization", "Bearer " + TOKEN)
@@ -51,21 +51,13 @@ def gh(method, path, body=None):
     r.data = json.dumps(body).encode()
    return json.loads(urllib.request.urlopen(r).read())
   except Exception as e:
-   err = str(e)
-
+   err = e
+ raise err
 
 
 def gh_get_json(path):
- for attempt in range(3):
-  try:
-   c = gh("GET", path)
-   return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
-  except Exception as e:
-   en = type(e).__name__
-   if en in ("IncompleteRead","RemoteDisconnected","ConnectionResetError","TimeoutError") and attempt < 2:
-    print("读 "+path+" err "+en+" retry "+str(attempt+1))
-    import time as _t; _t.sleep(3); continue
-   print("读 "+path+" fail: "+str(e)); break
+ c = gh("GET", path)
+ return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
 
 def gh_put_json(path, data, sha, msg):
     body = {
