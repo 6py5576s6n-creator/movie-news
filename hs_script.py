@@ -13,7 +13,7 @@ XSRF = read_clean("/home/openclaw/.openclaw/workspace/weibo.xsrf")
 
 REPO = "6py5576s6n-creator/movie-news"
 PATH = "hotsearch.json"
-HISTORY_PATH = "hotsearch_history.json"
+HISTORY_PATH = _get_history_path()
 
 H = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -165,7 +165,7 @@ oh2["records"].append({
     "hot": hot,
     "ent": ent
 })
-oh2["records"] = oh2["records"][-50:]
+
 r2 = gh_put_json(HISTORY_PATH, oh2, hs, "append " + result["updated_at"])
 print("history commit:", r2["commit"]["sha"])
 print("history 总数:", len(oh2["records"]))
