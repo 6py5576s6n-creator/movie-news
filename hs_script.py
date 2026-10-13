@@ -63,9 +63,9 @@ def gh_get_json(path):
   except Exception as e:
    en = type(e).__name__
    if en in ("IncompleteRead","RemoteDisconnected","ConnectionResetError","TimeoutError") and attempt < 2:
-    print("读 "+path+" 出现 "+en+"，第 "+str(attempt+1)+" 次重试...")
+    print("读 "+path+" err "+en+" retry "+str(attempt+1))
     import time as _t; _t.sleep(3); continue
-   print("读 "+path+" 失败: "+str(e)); break
+   print("读 "+path+" fail: "+str(e)); break
 
 def gh_put_json(path, data, sha, msg):
     body = {
