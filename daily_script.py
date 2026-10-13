@@ -130,17 +130,17 @@ def gh_put_json_retry(path, data, msg):
   raise
   raise Exception("3 次重试后仍失败")
 
-print("=== 1. 读 tracked.json ===")
+pass
 tracked, _ = gh_get_json("tracked.json")
 if not isinstance(tracked, list):
   tracked = ["奇换人生", "美人余"]
-print("追踪剧:", tracked)
+pass # silent
 
-print("=== 2. 读现有 news.json ===")
+pass
 old_news, news_sha = gh_get_json("news.json")
 if not isinstance(old_news, list):
   old_news = []
-print("旧数据:", len(old_news), "条")
+pass # silent
 
 print("=== 3. 清洗旧数据 ===")
 cleaned = 0
@@ -176,7 +176,7 @@ QUERIES = [
  ("短剧 热度 2026", True),
 ]
 for kw, adv in QUERIES:
-print("-- Tavily: " + kw + (" [advanced]" if adv else " [basic]"))
+pass # silent
   for res in tavily(kw):
   title = (res.get("title") or "").strip()
   if not title:
@@ -206,7 +206,7 @@ print("-- Tavily: " + kw + (" [advanced]" if adv else " [basic]"))
   "source_url": res.get("url") or "",
   "confidence": 0.7
   })
-print("Tavily 新增:", len(new_items), "条")
+pass # silent
 
 print("=== 5. 微博追踪 ===")
 
@@ -224,7 +224,7 @@ def weibo_search(name):
 
 tracking = []
 for name in tracked:
-  print("-- 微博: " + name)
+  pass # silent
   for card in weibo_search(name):
   for g in card.get("card_group", []):
   mb = g.get("mblog", {})
@@ -247,18 +247,18 @@ for name in tracked:
   "confidence": 0.9
   })
   time.sleep(3)
-print("微博追踪新增:", len(tracking), "条")
+pass # silent
 
 print("=== 6. 合并 + 去重 + 防覆盖 ===")
 all_new = new_items + tracking
-print("本次新增:", len(all_new), "条")
+pass # silent
 
 if len(all_new) == 0 and len(old_news) > 0:
   print("本次 0 条，保留旧文件不动")
-  print("=== ALL DONE (SKIPPED) ===")
+  print("DONE: skipped (0 new)")
   sys.exit(0)
 
-print("写入前重新读取最新 news.json...")
+pass # silent
 latest_news, latest_sha = gh_get_json("news.json")
 if isinstance(latest_news, list) and latest_news:
   for x in latest_news:
@@ -266,7 +266,7 @@ if isinstance(latest_news, list) and latest_news:
   if "{{" in c or "}}" in c:
   x["content"] = clean_content(c, x.get("title", ""))
   old_news = latest_news
-  print("已刷新基线:", len(old_news), "条")
+  pass # silent
 
 merged = old_news + all_new
 merged.sort(key=lambda k: k.get("publish_time", ""), reverse=True)
@@ -294,9 +294,9 @@ for x in merged:
   final.append(x)
 
 final = final[:200]
-print("合并后:", len(final), "条 (去掉了 " + str(len(merged) - len(final)) + " 条重复)")
+pass # silent
 
 r = gh_put_json_retry("news.json", final, "daily update " + datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M"))
 print("news.json commit:", r["commit"]["sha"])
-print("=== ALL DONE ===")
+print("DONE: old=%d new=%d final=%d commit=%s" % (len(old_news), len(all_new), len(final), r["commit"]["sha"][:7]))
 
