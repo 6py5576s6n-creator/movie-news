@@ -168,8 +168,15 @@ def tavily(query):
   return []
 
 new_items = []
-for kw in ["电影 定档 2026", "剧集 开机 2026", "国庆档 票房", "AI 电影 开机", "短剧 热度 2026"]:
-  print("-- Tavily: " + kw)
+QUERIES = [
+ ("电影 定档 2026", True),
+ ("剧集 开机 2026", False),
+ ("国庆档 票房", False),
+ ("AI 电影 开机", True),
+ ("短剧 热度 2026", True),
+]
+for kw, adv in QUERIES:
+print("-- Tavily: " + kw + (" [advanced]" if adv else " [basic]"))
   for res in tavily(kw):
   title = (res.get("title") or "").strip()
   if not title:
@@ -178,6 +185,8 @@ for kw in ["电影 定档 2026", "剧集 开机 2026", "国庆档 票房", "AI �
   continue
   raw_content = res.get("content") or ""
   content = clean_content(raw_content, title)
+  if len(content) > 5000:
+   content = content[:5000] + " ...[内容已截断]"
   summary = content[:80] if content else title
   theme = "long"
   if "AI" in title or "ai" in title:
