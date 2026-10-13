@@ -40,8 +40,8 @@ def fetch(url, ref):
 
 def gh(method, path, body=None):
  url = "https://api.github.com/repos/" + REPO + "/contents/" + path
- last_err = None
- for _i in range(3):
+ err = None
+ for _at in range(3):
   try:
    r = urllib.request.Request(url, method=method)
    r.add_header("Authorization", "Bearer " + TOKEN)
@@ -51,7 +51,7 @@ def gh(method, path, body=None):
     r.data = json.dumps(body).encode()
    return json.loads(urllib.request.urlopen(r).read())
   except Exception as e:
-   last_err = e
+   err = str(e)
 
 
 
@@ -61,14 +61,12 @@ def gh_get_json(path):
    c = gh("GET", path)
    return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
   except Exception as e:
-   err_name = type(e).__name__
-   if err_name in ("IncompleteRead", "RemoteDisconnected", "ConnectionResetError", "TimeoutError") and attempt < 2:
-    print("读 " + path + " 出现 " + err_name + "，第 " + str(attempt+1) + " 次重试...")
-    import time as _t
-    _t.sleep(3)
-    continue
-   print("读 " + path + " 失败: " + str(e))
-   break
+   en = type(e).__name__
+   if en in ("IncompleteRead","RemoteDisconnected","ConnectionResetError","TimeoutError") and attempt < 2:
+    print("读 "+path+" 出现 "+en+"，第 "+str(attempt+1)+" 次重试...")
+    import time as _t; _t.sleep(3); continue
+   print("读 "+path+" 失败: "+str(e)); break
+
 def gh_put_json(path, data, sha, msg):
     body = {
         "message": msg,
