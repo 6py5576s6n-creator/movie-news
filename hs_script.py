@@ -50,13 +50,20 @@ def gh(method, path, body=None):
     return json.loads(urllib.request.urlopen(r).read())
 
 def gh_get_json(path):
-    try:
-        c = gh("GET", path)
-        return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
-    except Exception as e:
-        print("读 " + path + " 失败: " + str(e))
-        return None, None
-
+ for attempt in range(3):
+ try:
+ c = gh("GET", path)
+ return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
+ except Exception as e:
+ err_name = type(e).__name__
+ if err_name in ("IncompleteRead", "RemoteDisconnected", "ConnectionResetError", "TimeoutError") and attempt < 2:
+ print("读 " + path + " 出现 " + err_name + "，第 " + str(attempt+1) + " 次重试...")
+ import time as _t
+ _t.sleep(3)
+ continue
+ print("读 " + path + " 失败: " + str(e))
+ return None, None
+ return None, None
 def gh_put_json(path, data, sha, msg):
     body = {
         "message": msg,
