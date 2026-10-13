@@ -40,7 +40,6 @@ def fetch(url, ref):
 
 def gh(method, path, body=None):
  url = "https://api.github.com/repos/" + REPO + "/contents/" + path
- err = None
  for _i in range(3):
   try:
    r = urllib.request.Request(url, method=method)
@@ -51,12 +50,14 @@ def gh(method, path, body=None):
     r.data = json.dumps(body).encode()
    return json.loads(urllib.request.urlopen(r).read())
   except Exception as e:
-   err = e
- raise err
+   pass
+ raise IOError("gh failed 3x: " + path)
 
 
 def gh_get_json(path):
  c = gh("GET", path)
+ if c is None:
+  return None, None
  return json.loads(base64.b64decode(c["content"]).decode("utf-8")), c["sha"]
 
 def gh_put_json(path, data, sha, msg):
