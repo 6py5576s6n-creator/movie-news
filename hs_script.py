@@ -11,9 +11,14 @@ TOKEN = read_clean("/home/openclaw/.openclaw/workspace/github.token")
 COOKIE = read_clean("/home/openclaw/.openclaw/workspace/weibo.cookie")
 XSRF = read_clean("/home/openclaw/.openclaw/workspace/weibo.xsrf")
 
+def _get_history_path():
+ now_cn = datetime.now(timezone(timedelta(hours=8)))
+ monday = now_cn - timedelta(days=now_cn.weekday())
+ return "hotsearch_history_" + monday.strftime("%Y%m%d") + ".json"
+
 REPO = "6py5576s6n-creator/movie-news"
 PATH = "hotsearch.json"
-HISTORY_PATH = "hotsearch_history.json"
+HISTORY_PATH = _get_history_path()
 
 H = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
